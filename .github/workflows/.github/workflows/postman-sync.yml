@@ -1,0 +1,40 @@
+name: Postman Enterprise Sync Demo
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+
+jobs:
+  sync-postman:
+    runs-on: ubuntu-latest
+
+    env:
+      POSTMAN_WORKSPACE_ID: ${{ secrets.POSTMAN_WORKSPACE_ID }}
+      POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+      # These could be plain envs or GitHub Encrypted Secrets as well:
+      SERVICE_BASE_URL: "https://api.example.com"
+      SERVICE_API_KEY: "demo-key"
+      ENV_NAME: "Enterprise Demo Environment"
+      COLLECTION_NAME: "Enterprise Demo Collection"
+      # Uncomment if you want to update existing assets instead of creating new ones:
+      # POSTMAN_COLLECTION_UID: ${{ secrets.POSTMAN_COLLECTION_UID }}
+      # POSTMAN_ENV_UID: ${{ secrets.POSTMAN_ENV_UID }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Generate and push Postman assets
+        run: |
+          python scripts/generate_postman_assets.py
