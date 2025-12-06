@@ -1,109 +1,97 @@
+#!/usr/bin/env python3
 import os
 import requests
 import json
 from typing import Dict, Any
 
-POSTMAN_API_BASE_URL = "https://api.getpostman.com"
+POSTMAN_API_BASE = "https://api.getpostman.com"
+
 
 def build_environment(name: str) -> Dict[str, Any]:
-    """Builds a Postman environment configuration."""
-
+    """
+    Build a Postman environment JSON from environment variables.
+    """
     base_url = os.environ.get("SERVICE_BASE_URL", "https://api.example.com")
-    api_key = os.environ.get("SERVICE_API_KEY", "dummy-api-key")
+    api_key = os.environ.get("SERVICE_API_KEY", "demo-key")
 
-    env_payload = {
+    return {
         "name": name,
         "values": [
-            {
-                "key": "base_url",
-                "value": base_url,
-                "enabled": True
-            },
-            {
-                "key": "api_key",
-                "value": api_key,
-                "enabled": True
-            }
-        ]               
+            {"key": "base_url", "value": base_url, "enabled": True},
+            {"key": "api_key", "value": api_key, "enabled": True},
+        ],
     }
 
-    return env_payload
 
+def build_collection(name: str) -> Dict[str, Any]:
+    """
+    Build a minimal Postman Collection for demo purposes.
+    """
+    base_url_var = "{{base_url}}"
 
-    def build_collection(name: str) -> Dict[str, Any]:
-        """Builds a Postman collection configuration."""
-
-        collection_payload = {
-            "info": {
-                "name": name,
-                "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-            },
-            "item": [
-                {
-                    "name": "Health Check",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "X-API-KEY",
-                                "value": "{{api_key}}",
-                                
-                            }
-                        ],
-                        "url": {
-                            "raw": f"{{base_url}}/health",
-                            "host": ["base_url"],
-                            "path": ["health"]
-                        }
-                    }
+    return {
+        "info": {
+            "name": name,
+            "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        },
+        "item": [
+            {
+                "name": "Health Check",
+                "request": {
+                    "method": "GET",
+                    "header": [{"key": "X-API-Key", "value": "{{api_key}}"}],
+                    "url": {
+                        "raw": f"{base_url_var}/health",
+                        "host": [base_url_var],
+                        "path": ["health"],
+                    },
                 },
-                {
-                    "name" : "Get Users",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "X-API-KEY",
-                                "value": "{{api_key}}",
-                                "type": "text"
-                            }
-                        ],
-                        "url": {
-                            "raw": f"{{base_url}}/users",
-                            "host": ["base_url_var"],
-                            "path": ["users"]
-                        }
-                    }
-                }
-            ]
-        }
+            },
+            {
+                "name": "Get Users",
+                "request": {
+                    "method": "GET",
+                    "header": [{"key": "X-API-Key", "value": "{{api_key}}"}],
+                    "url": {
+                        "raw": f"{base_url_var}/users",
+                        "host": [base_url_var],
+                        "path": ["users"],
+                    },
+                },
+            },
+        ],
+    }
 
-        return collection_payload
 
-def upsert_collection(api_key: str, workspace_id: str, coll_payload: Dict[str, Any]) -> str:
-    """
-    Create or update a collection in Postman.
-    If POSTMAN_COLLECTION_UID is set, update that collection; otherwise create a new one.
-    """
+def upsert_environment(api_key: str, workspace_id: str, env_payload: Dict[str, Any]) -> str:
     headers = {"X-Api-Key": api_key, "Content-Type": "application/json"}
+    env_uid = os.environ.get("POSTMAN_ENV_UID")
 
-    coll_uid = os.environ.get("POSTMAN_COLLECTION_UID")
-    if coll_uid:
-        print(f"Updating existing Postman collection: {coll_uid}")
-        url = f"{POSTMAN_API_BASE}/collections/{coll_uid}"
-        body = {"collection": coll_payload}
-        resp = requests.put(url, headers=headers, json=body)
+    if env_uid:
+        url = f"{POSTMAN_API_BASE}/environments/{env_uid}"
+        resp = requests.put(url, headers=headers, json={"environment": env_payload})
     else:
-        print("Creating new Postman collection")
-        url = f"{POSTMAN_API_BASE}/collections?workspace={workspace_id}"
-        body = {"collection": coll_payload}
-        resp = requests.post(url, headers=headers, json=body)
+        url = f"{POSTMAN_API_BASE}/environments?workspace={workspace_id}"
+        resp = requests.post(url, headers=headers, json={"environment": env_payload})
 
     resp.raise_for_status()
-    data = resp.json()
-    new_uid = data["collection"]["uid"]
-    print(f"Collection UID: {new_uid}")
-    return new_uid
+    return resp.json()["environment"]["uid"]
+
+
+def upsert_collection(api_key: str, workspace_id: str, coll_payload: Dict[str, Any]) -> str:
+    headers = {"X-Api-Key": api_key, "Content-Type": "application/json"}
+    coll_uid = os.environ.get("POSTMAN_COLLECTION_UID")
+
+    if coll_uid:
+        url = f"{POSTMAN_API_BASE}/collections/{coll_uid}"
+        resp = requests.put(url, headers=headers, json={"collection": coll_payload})
+    else:
+        url = f"{POSTMAN_API_BASE}/collections?workspace={workspace_id}"
+        resp = requests.post(url, headers=headers, json={"collection": coll_payload})
+
+    resp.raise_for_status()
+    return resp.json()["collection"]["uid"]
+
 
 def main():
     api_key = os.environ["POSTMAN_API_KEY"]
@@ -120,10 +108,10 @@ def main():
     coll_payload = build_collection(coll_name)
     print(json.dumps(coll_payload, indent=2))
 
-    print("Upserting environment in Postman...")
+    print("Upserting environment...")
     env_uid = upsert_environment(api_key, workspace_id, env_payload)
 
-    print("Upserting collection in Postman...")
+    print("Upserting collection...")
     coll_uid = upsert_collection(api_key, workspace_id, coll_payload)
 
     print("Done.")
