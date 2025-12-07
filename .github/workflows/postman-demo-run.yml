@@ -1,0 +1,48 @@
+name: Postman Live Demo Wizard
+
+on:
+  workflow_dispatch:
+    inputs:
+      customer:
+        description: "Customer / Project Name"
+        required: true
+      baseUrl:
+        description: "Base API URL"
+        required: true
+        default: "https://api.example.com"
+      apiKeyValue:
+        description: "Fake API Key for demo"
+        required: false
+        default: "demo-key"
+      endpoints:
+        description: "Comma-separated demo endpoints"
+        required: false
+        default: "/health,/users"
+
+jobs:
+  run-demo:
+    runs-on: ubuntu-latest
+
+    env:
+      POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+      POSTMAN_WORKSPACE_ID: ${{ secrets.POSTMAN_WORKSPACE_ID }}
+      CUSTOMER_NAME: ${{ inputs.customer }}
+      BASE_URL: ${{ inputs.baseUrl }}
+      API_KEY_VALUE: ${{ inputs.apiKeyValue }}
+      ENDPOINTS: ${{ inputs.endpoints }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: |
+          pip install requests
+
+      - name: Run Demo Wizard (CI)
+        run: python scripts/live_demo_wizard_ci.py

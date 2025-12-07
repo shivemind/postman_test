@@ -42,3 +42,9 @@ postman_ids.json
 # GitHub Actions temporary files
 # ------------------------------------
 .github/workflows/*.tmp
+@"
+node_modules/
+postman_ids_live_demo.json
+__pycache__/
+*.pyc
+"@ | Out-File -Encoding utf8 .gitignore
