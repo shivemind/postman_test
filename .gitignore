@@ -1,0 +1,44 @@
+# ------------------------------------
+# Python bytecode + cache directories
+# ------------------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ------------------------------------
+# Virtual environments
+# ------------------------------------
+venv/
+env/
+.idea/
+.vscode/
+
+# ------------------------------------
+# OS-generated files
+# ------------------------------------
+.DS_Store
+Thumbs.db
+
+# ------------------------------------
+# Local-only development scripts
+# (contains secrets, NEVER commit)
+# ------------------------------------
+setenv.ps1
+local-sync.ps1
+local-reset.ps1
+
+# ------------------------------------
+# Postman generated artifacts
+# ------------------------------------
+postman_ids.json
+
+# ------------------------------------
+# Logs
+# ------------------------------------
+*.log
+
+# ------------------------------------
+# GitHub Actions temporary files
+# ------------------------------------
+.github/workflows/*.tmp
