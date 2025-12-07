@@ -13,7 +13,7 @@ jobs:
       POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
       SERVICE_BASE_URL: "https://api.example.com"
       SERVICE_API_KEY: "demo-key"
-      COLLECTION_NAME: "Enterprise PR Demo Collection"
+      COLLECTION_NAME: "Enterprise-PR-${{ github.event.number }}-Collection"
       ENV_NAME: "PR-${{ github.event.number }}-Environment"
 
     steps:
