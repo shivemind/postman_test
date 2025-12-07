@@ -17,6 +17,7 @@ jobs:
       SERVICE_API_KEY: "demo-key"
       ENV_NAME: "Enterprise Demo Environment"
       COLLECTION_NAME: "Enterprise Demo Collection"
+      USE_K8S_CONFIG: "false"   # flip to "true" in a real K8s-aware pipeline
       # Uncomment if you want to update existing assets instead of creating new ones:
       # POSTMAN_COLLECTION_UID: ${{ secrets.POSTMAN_COLLECTION_UID }}
       # POSTMAN_ENV_UID: ${{ secrets.POSTMAN_ENV_UID }}
@@ -35,6 +36,36 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
+          - name: (Optional) Pull K8s config for environment
+        if: ${{ env.USE_K8S_CONFIG == 'true' }}
+        run: |
+          echo "Simulating 'kubectl get configmap' here."
+          # In a real cluster you'd do something like:
+          # kubectl get configmap api-config -o json > k8s_config.json
+          # export SERVICE_BASE_URL=$(jq -r '.data.SERVICE_BASE_URL' k8s_config.json)
+          # export SERVICE_API_KEY=$(jq -r '.data.SERVICE_API_KEY' k8s_config.json)      
+
       - name: Generate and push Postman assets
         run: |
           python scripts/generate_postman_assets.py
+
+            - name: Notify Slack
+        if: ${{ success() }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          payload='{"text": "Postman workspace updated by GitHub Actions: '${{ github.workflow }}' on commit '${{ github.sha }}'."}'
+          curl -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL"
+                 
+          - name: Install Newman
+        run: |
+          npm install -g newman
+
+      - name: Run Postman tests via Newman
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+        run: |
+          echo "Reading collection UID from postman_ids.json..."
+          COLLECTION_UID=$(jq -r '.collection_uid' postman_ids.json)
+          echo "Running newman on collection UID: $COLLECTION_UID"
+          newman run "https://api.getpostman.com/collections/$COLLECTION_UID?apikey=$POSTMAN_API_KEY"

@@ -1,0 +1,8 @@
+    env:
+      POSTMAN_WORKSPACE_ID: ${{ secrets.POSTMAN_WORKSPACE_ID }}
+      POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+      SERVICE_BASE_URL: "https://api.example.com"
+      SERVICE_API_KEY: "demo-key"
+      ENV_NAME: "Enterprise Demo Environment"
+      COLLECTION_NAME: "Enterprise Demo Collection"
+      OPENAPI_SPEC_PATH: "openapi.yaml"   # 👈 new

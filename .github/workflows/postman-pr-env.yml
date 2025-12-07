@@ -1,0 +1,41 @@
+name: Postman PR Environment
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+jobs:
+  manage-pr-env:
+    runs-on: ubuntu-latest
+
+    env:
+      POSTMAN_WORKSPACE_ID: ${{ secrets.POSTMAN_WORKSPACE_ID }}
+      POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+      SERVICE_BASE_URL: "https://api.example.com"
+      SERVICE_API_KEY: "demo-key"
+      COLLECTION_NAME: "Enterprise PR Demo Collection"
+      ENV_NAME: "PR-${{ github.event.number }}-Environment"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Create/update PR environment
+        if: ${{ github.event.action != 'closed' }}
+        run: |
+          python scripts/generate_postman_assets.py
+
+      - name: Delete PR environment on close
+        if: ${{ github.event.action == 'closed' }}
+        run: |
+          python scripts/reset_postman_assets.py
